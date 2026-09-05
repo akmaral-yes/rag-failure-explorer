@@ -64,7 +64,17 @@ documentation — "the platform," "the service" — not a named fictional compan
 - **Vector:** standard similarity search over embedded chunks
 - **Multi-Query:** `MultiQueryRetriever.from_llm()` (langchain_classic) wrapping the vector retriever
 - **MMR:** vector store's `as_retriever(search_type="mmr")`
-- **Parent-Child:** `ParentDocumentRetriever` (langchain_classic), large parent / small child splitter
+- **Parent-Child:** `ParentDocumentRetriever` (langchain_classic). Implementation invariant:
+  `##` headings in `inference_service_guide.md` are pre-split into logical parent `Document`
+  objects using `MarkdownHeaderTextSplitter` *before* being passed to `ParentDocumentRetriever`.
+  The retriever is configured with a `child_splitter` only (`parent_splitter=None`), so the
+  pre-split `##` sections are stored as-is as parents. Vector search matches against child
+  chunks; the retriever resolves each match's `parent_id` to the corresponding docstore entry
+  and returns the full parent section, not the matched child alone. Do not pass
+  `MarkdownHeaderTextSplitter` as the retriever's `parent_splitter` argument — pre-splitting
+  happens before the retriever, not inside it.
+  Target sizing: child chunks ~80–150 words, parent (`##`) sections ~250–400 words, so the
+  parent is meaningfully richer than any single child.
 
 All retrievers return `{content, score, source_doc_id}`. BM25 scores and vector distances
 are on different scales — normalize before displaying side by side (don't assume raw

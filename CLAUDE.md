@@ -28,6 +28,11 @@ against the exact installed version in `pyproject.toml` before assuming an impor
 - Chroma vector store → `langchain-chroma` (NOT `langchain_community.vectorstores`)
 - If adding Self-Query or any retriever with auto-detected translators later, pass
   `structured_query_translator` explicitly — auto-detection has a known `ImportError` bug.
+- `ParentDocumentRetriever` does NOT take `MarkdownHeaderTextSplitter` as its `parent_splitter`
+  argument. Pre-split the long doc's `##` sections into parent `Document` objects with
+  `MarkdownHeaderTextSplitter` first, then pass those pre-split parents to
+  `ParentDocumentRetriever` with `child_splitter` only (`parent_splitter=None`). See
+  PROJECT_SPEC.md's Parent-Child implementation invariant before writing this retriever.
 
 ## Module structure — keep this separation
 ```
@@ -58,6 +63,16 @@ is `gpt-4o-mini` for Multi-Query's query-variation generation.
   any other placeholder company.
 - Corpus lives in `corpus/corpus.json` (short docs) + `corpus/long_docs/` (the one long
   hierarchical doc used for the parent-child scenario, real markdown headers).
+- Every document in `corpus.json` must include a `scenario_group` field — a short snake_case
+  identifier linking documents that were deliberately designed together to produce one
+  scenario's effect (e.g. an exact-term/paraphrase pair, or a 3–4 doc near-duplicate cluster).
+  This is separate from `scenario_hint` (which scenario type) — `scenario_group` says which
+  specific designed cluster a document belongs to, so intentional groupings survive reordering
+  and are easy to re-check during validation.
+- Document schema: `{id, text, topic_tag, scenario_hint, scenario_group}`.
+- Write documents anchored to concrete platform behavior, defaults, or configuration —
+  not abstract explanations of a concept. ("The gateway's default per-call timeout is set
+  in the service config..." not "A timeout is a setting that controls how long...".)
 - See PROJECT_SPEC.md for the topic taxonomy and scenario mapping before writing new documents.
 
 ## Environment
