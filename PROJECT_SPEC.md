@@ -76,9 +76,41 @@ documentation — "the platform," "the service" — not a named fictional compan
   Target sizing: child chunks ~80–150 words, parent (`##`) sections ~250–400 words, so the
   parent is meaningfully richer than any single child.
 
-All retrievers return `{content, score, source_doc_id}`. BM25 scores and vector distances
-are on different scales — normalize before displaying side by side (don't assume raw
-comparability).
+All retrievers return `{content, score, source_doc_id, rank}`. **Do not normalize or compare
+scores across retriever types.** BM25 scores, Chroma's raw distance, and any similarity
+transform are on fundamentally different scales with no natural numeric equivalence — min-max
+normalizing them into a shared 0–1 range creates a false impression of comparable "relevance"
+(e.g. BM25's top result and Vector's top result both showing as "1.0" despite meaning nothing
+alike). Instead:
+- **Rank is the primary cross-retriever comparison dimension**, always present and always
+  meaningful (1st, 2nd, 3rd place within that retriever's own result set).
+- **Raw/internal scores are preserved and displayed as retriever-specific**, labeled clearly
+  (e.g. "BM25 score: 8.24" vs. "Vector similarity: 0.82"), never rescaled to imply
+  cross-retriever comparability. The UI states explicitly: "Scores are comparable only within
+  the same retriever, not across retrievers."
+- Chroma distinguishes distance-returning similarity search from a defined relevance-score
+  transform (`relevance_score_fn`) — decide which one you're using per retriever and label
+  accordingly; don't silently mix distance and similarity-score semantics.
+- For retrievers where a single final score doesn't naturally exist for a given result
+  (Multi-Query: unique union across several generated queries; Parent-Child: the match belongs
+  to a child chunk, not the returned parent), display rank without inventing a synthetic score.
+  For Parent-Child specifically, it's acceptable to surface the matched child's score as
+  supporting context ("matched via child chunk, score X") alongside the returned parent content.
+
+**MMR parameters are initial experiment parameters, not fixed constants.** Starting point:
+`k=3, fetch_k=10, lambda_mult=0.5`. Given the corpus is only ~20 short docs, `fetch_k=10`
+already considers a large share of the collection — during Phase 3 validation, test
+`fetch_k ∈ {6, 10}` and `lambda_mult ∈ {0.3, 0.5, 0.7}` to confirm the diversity effect isn't
+an artifact of one arbitrary setting, not to run a full tuning study.
+
+**Multi-Query k semantics:** the base retriever retrieves `k=3` per generated query variation,
+then `MultiQueryRetriever` returns the unique union across all variations — this can exceed 3
+documents total, and that's intentional; broader coverage across phrasings is the effect this
+scenario is meant to demonstrate. Do not force the union down to exactly 3 early. The UI shows
+the top 3 of the final unique set with an indicator of total unique docs retrieved (e.g.
+"showing top 3 of 6 unique results"), rather than silently truncating. Set
+`include_original=True` (LangChain's default is `False`) so the user's original query wording
+is retrieved alongside the LLM-generated variations, giving a cleaner baseline.
 
 **Stack:** Python 3.12, uv + pyproject.toml (exact-pinned versions), LangChain
 (langchain_classic, langchain_community, langchain-chroma), OpenAI (`gpt-4o-mini` for

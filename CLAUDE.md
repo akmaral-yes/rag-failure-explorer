@@ -46,11 +46,16 @@ Do not collapse this into a single script.
 ## Result shape contract
 Every retriever must return results as a list of:
 ```python
-{"content": str, "score": float, "source_doc_id": str}
+{"content": str, "score": float | None, "source_doc_id": str, "rank": int}
 ```
-The UI and validation logic depend on this shape being consistent across all 5 retrievers.
-Note: BM25 scores and vector distances are not on the same scale — do not assume they're
-directly comparable without normalization (see PROJECT_SPEC.md).
+`rank` is always present and is the primary cross-retriever comparison dimension. `score` is
+retriever-specific and MUST NOT be normalized or rescaled to be comparable across retriever
+types — BM25 scores, Chroma distance, and similarity transforms are on different scales with
+no natural equivalence. Never min-max normalize scores across retrievers; it implies a false
+equivalence. If a retriever has no single meaningful final score for a result (Multi-Query's
+unique union, Parent-Child's parent-vs-matched-child), set `score=None` and rely on rank —
+do not invent a synthetic score. See PROJECT_SPEC.md's scoring section for full detail
+including Multi-Query's `include_original=True` and non-truncation of its unique-result union.
 
 ## Explanations — no runtime LLM calls for this part
 Explanations in `questions.json` are hand-written and validated empirically against real
