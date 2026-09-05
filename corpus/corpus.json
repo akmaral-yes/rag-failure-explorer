@@ -1,0 +1,149 @@
+[
+    {
+        "id": "ret_001",
+        "text": "The retrieval service uses HNSW (Hierarchical Navigable Small World) indexing for approximate nearest neighbor search. The ef_construction parameter controls the trade-off between index build time and search recall — higher values produce a more thoroughly connected graph at the cost of slower indexing.",
+        "topic_tag": "retrieval.vector_search",
+        "scenario_hint": "bm25_exact_term",
+        "scenario_group": "hnsw_build_parameter"
+    },
+    {
+        "id": "ret_002",
+        "text": "By default, the platform's graph-build setting favors faster indexing over connection density. Teams reindexing infrequently-updated collections typically increase this setting before a rebuild, accepting a longer index build in exchange for better search quality at query time.",
+        "topic_tag": "retrieval.vector_search",
+        "scenario_hint": "bm25_exact_term",
+        "scenario_group": "hnsw_build_parameter"
+    },
+    {
+        "id": "ret_003",
+        "text": "Requests to the inference gateway include a configurable gRPC deadline. If a downstream model server does not respond before the deadline elapses, the gateway cancels the call and returns a DEADLINE_EXCEEDED error to the caller rather than waiting indefinitely.",
+        "topic_tag": "inference.serving",
+        "scenario_hint": "bm25_exact_term",
+        "scenario_group": "grpc_deadline"
+    },
+    {
+        "id": "ret_004",
+        "text": "The gateway's default per-call timeout is set in the service config and applies uniformly across all backends unless overridden per-route. Routes calling slower models, such as batch-scoring endpoints, commonly override this default to avoid premature cancellation.",
+        "topic_tag": "inference.serving",
+        "scenario_hint": "bm25_exact_term",
+        "scenario_group": "grpc_deadline"
+    },
+    {
+        "id": "ret_005",
+        "text": "The vector store supports IVF-PQ (Inverted File with Product Quantization) indexes, which compress embeddings into compact codes to reduce memory footprint at the cost of some recall.",
+        "topic_tag": "retrieval.vector_search",
+        "scenario_hint": "bm25_exact_term",
+        "scenario_group": "ivf_pq_compression"
+    },
+    {
+        "id": "ret_006",
+        "text": "Memory-optimized vector compression is enabled automatically once a collection crosses the platform's configured size threshold. Collections below the threshold continue to use uncompressed vectors for maximum search accuracy.",
+        "topic_tag": "retrieval.vector_search",
+        "scenario_hint": "bm25_exact_term",
+        "scenario_group": "ivf_pq_compression"
+    },
+    {
+        "id": "sec_001",
+        "text": "When a signed access token's validity window closes, the platform does not automatically renew it. Client applications must exchange their refresh credential for a fresh token before making further authenticated calls; requests made after the window closes are rejected with a 401 response.",
+        "topic_tag": "security.authentication",
+        "scenario_hint": "vector_paraphrase",
+        "scenario_group": "token_expiry_renewal"
+    },
+    {
+        "id": "sec_002",
+        "text": "Service accounts used for machine-to-machine calls are not tied to an individual's login session. Each one carries its own set of granted permissions, and access can be revoked immediately by disabling the account, without affecting any human user's credentials.",
+        "topic_tag": "security.authentication",
+        "scenario_hint": "vector_paraphrase",
+        "scenario_group": "service_account_isolation"
+    },
+    {
+        "id": "sec_003",
+        "text": "Credentials issued to external integrations are scoped to a narrow set of allowed operations at creation time. An integration that was only granted read access to one resource type cannot be used to modify data or reach unrelated resources, regardless of what the underlying account could otherwise do.",
+        "topic_tag": "security.authentication",
+        "scenario_hint": "vector_paraphrase",
+        "scenario_group": "scoped_credential_permissions"
+    },
+    {
+        "id": "mon_001",
+        "text": "The platform tracks p50, p95, and p99 response times per endpoint. An alert fires automatically when p99 latency exceeds its configured threshold for more than five consecutive minutes, indicating the service is responding slower than expected for a meaningful share of requests.",
+        "topic_tag": "monitoring.latency",
+        "scenario_hint": "multi_query_ambiguous",
+        "scenario_group": "service_health_signals"
+    },
+    {
+        "id": "mon_002",
+        "text": "A rolling error-rate metric is computed over each five-minute window. If the proportion of non-2xx responses crosses the configured budget, the deployment is automatically flagged as unhealthy and new traffic is no longer routed to it until the rate recovers.",
+        "topic_tag": "monitoring.errors",
+        "scenario_hint": "multi_query_ambiguous",
+        "scenario_group": "service_health_signals"
+    },
+    {
+        "id": "mon_003",
+        "text": "Prediction distributions are compared against a stored training-time baseline on a scheduled basis. A statistically significant shift away from that baseline is logged as a drift event, which does not block traffic but is surfaced for a human to review model quality.",
+        "topic_tag": "monitoring.model_quality",
+        "scenario_hint": "multi_query_ambiguous",
+        "scenario_group": "service_health_signals"
+    },
+    {
+        "id": "mon_004",
+        "text": "Canary deployments receive a small percentage of live traffic before a full rollout. If the canary's error rate or latency diverges meaningfully from the currently deployed version's baseline during the observation window, the rollout halts and traffic reverts to the previous version automatically.",
+        "topic_tag": "deployment.canary",
+        "scenario_hint": "multi_query_ambiguous",
+        "scenario_group": "service_health_signals"
+    },
+    {
+        "id": "mmr_001",
+        "text": "API keys are subject to a request-per-minute quota tracked at the account level. Once the quota is exhausted, further requests receive a 429 response until the next rate-limit window resets the counter.",
+        "topic_tag": "security.rate_limiting",
+        "scenario_hint": "mmr_near_duplicate",
+        "scenario_group": "rate_limit_restated"
+    },
+    {
+        "id": "mmr_002",
+        "text": "The platform enforces throttling on any client that exceeds its allotted request volume within a rolling one-minute window. Excess requests are rejected with a 429 status until the client's usage falls back under the limit.",
+        "topic_tag": "monitoring.throttling",
+        "scenario_hint": "mmr_near_duplicate",
+        "scenario_group": "rate_limit_restated"
+    },
+    {
+        "id": "mmr_003",
+        "text": "Calls to the embedding API are capped per minute per account. When an account surpasses this cap, subsequent calls fail immediately with a rate-limit error rather than being queued, and normal service resumes once the current window ends.",
+        "topic_tag": "retrieval.embedding_api",
+        "scenario_hint": "mmr_near_duplicate",
+        "scenario_group": "rate_limit_restated"
+    },
+    {
+        "id": "mmr_004",
+        "text": "Usage above the account's included request volume is metered per minute and blocked once the ceiling is reached, with access restored automatically as soon as the following minute begins.",
+        "topic_tag": "billing.quotas",
+        "scenario_hint": "mmr_near_duplicate",
+        "scenario_group": "rate_limit_restated"
+    },
+    {
+        "id": "lim_001",
+        "text": "The inference gateway caps the number of concurrent open connections per client to prevent any single caller from exhausting server-side worker threads. Connection attempts beyond the cap are queued briefly before being rejected if capacity doesn't free up in time.",
+        "topic_tag": "inference.serving",
+        "scenario_hint": null,
+        "scenario_group": null
+    },
+    {
+        "id": "lim_002",
+        "text": "Document uploads larger than the configured maximum payload size are rejected at the ingestion endpoint before any processing begins, returning a 413 response. Large files should be split into smaller batches rather than submitted as a single upload.",
+        "topic_tag": "ingestion.upload",
+        "scenario_hint": null,
+        "scenario_group": null
+    },
+    {
+        "id": "lim_003",
+        "text": "Clients that receive a retryable error are expected to back off exponentially between attempts rather than retrying immediately. The platform does not enforce this client-side, but repeated immediate retries from a single client can trigger stricter throttling as a side effect.",
+        "topic_tag": "monitoring.throttling",
+        "scenario_hint": null,
+        "scenario_group": null
+    },
+    {
+        "id": "lim_004",
+        "text": "Storage quotas cap the total indexed document volume per account, independent of request rate. Ingestion responses include a warning header once an account approaches its storage quota, rather than blocking uploads without notice.",
+        "topic_tag": "ingestion.upload",
+        "scenario_hint": null,
+        "scenario_group": null
+    }
+]
