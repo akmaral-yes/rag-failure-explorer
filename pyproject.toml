@@ -10,11 +10,18 @@ dependencies = [
     "langchain-classic==1.0.8",
     "langchain-community==0.4.2",
     "langchain-openai==1.6.0",
+    "langchain-text-splitters==1.1.2",
     "python-dotenv==1.2.3",
+    "rank-bm25==0.2.2",
 ]
 
 [dependency-groups]
 dev = [
     "pytest==9.1.1",
     "ruff==0.16.6",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: tests that make real OpenAI API calls (embeddings/LLM)",
 ]
