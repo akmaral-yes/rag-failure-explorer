@@ -1,0 +1,20 @@
+[project]
+name = "rag-failure-explorer"
+version = "0.1.0"
+description = "Interactive comparison of 5 RAG retrieval strategies, showing when each one wins or fails"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "gradio==6.26.0",
+    "langchain-chroma==1.1.0",
+    "langchain-classic==1.0.8",
+    "langchain-community==0.4.2",
+    "langchain-openai==1.6.0",
+    "python-dotenv==1.2.3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.6",
+]
