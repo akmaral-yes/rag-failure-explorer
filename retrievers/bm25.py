@@ -4,13 +4,26 @@ from langchain_community.retrievers import BM25Retriever
 
 from config import DEFAULT_K
 from corpus.loader import load_corpus_documents
+from retrievers.bm25_preprocessing import preprocess_normalized_stopwords
 from retrievers.common import RetrievalResult, build_result
 
 SCORE_LABEL = "bm25_score"
 
+# Chosen empirically via experiments/bm25_preprocessing.py's comparison of three
+# tokenization configs across the current curated question set
+# (corpus/questions.json): normalized + hand-chosen stopword removal gave the
+# most consistent BM25 ranking behavior on that validation set. This is not a
+# claim that it is "correct BM25" in general — see
+# retrievers/bm25_preprocessing.py for the stopword-set caveat and the full
+# comparison rationale. Passed explicitly (not relying on BM25Retriever's own
+# default_preprocessing_func) so the choice is visible at the call site.
+DEFAULT_PREPROCESS_FUNC = preprocess_normalized_stopwords
+
 
 def _build_retriever(k: int) -> BM25Retriever:
-    return BM25Retriever.from_documents(load_corpus_documents(), k=k)
+    return BM25Retriever.from_documents(
+        load_corpus_documents(), k=k, preprocess_func=DEFAULT_PREPROCESS_FUNC
+    )
 
 
 def _raw_bm25_scores(retriever: BM25Retriever, query: str) -> list[float]:
