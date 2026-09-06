@@ -25,12 +25,14 @@ from retrievers.vector import vector_search
 
 QUESTIONS_PATH = Path(__file__).parent / "questions.json"
 
-# Headroom for BM25/Vector rank-contrast checks — more than the k=3 a user would
-# actually see, because these checks need to distinguish "the comparison
-# retriever missed the doc entirely" from "it found the doc but ranked it much
-# lower," which a bare top-3 window can't tell apart. MMR's check stays at the
-# real top-3 (no headroom) for the opposite reason: MMR's whole claim is about
-# what the user actually sees in the top 3, not about ranks further down.
+# Headroom for the BM25/Vector "best rank" diagnostic — more than the k=3 a user
+# would actually see. The verdict itself only asks whether each retriever's
+# rank equals 1 (see _top_result_verdict), which a top-3 window would already
+# reveal; the extra headroom exists so the printed diagnostics can still report
+# how far off a non-winning retriever actually was (e.g. "found at rank 7" vs.
+# "not found at all"), for a human reviewing the output. MMR's check stays at
+# the real top-3 (no headroom) for the opposite reason: MMR's whole claim is
+# about what the user actually sees in the top 3, not about ranks further down.
 RANK_LOOKUP_K = 10
 
 SCENARIO_TYPE_TO_WINNER = {
@@ -195,33 +197,42 @@ def _best_rank(
     return best_rank, best_id
 
 
-def _rank_contrast_verdict(expected_rank: int | None, comparison_rank: int | None) -> Verdict:
-    """Deterministic rank-arithmetic verdict shared by the BM25/Vector checks."""
-    if expected_rank is None or expected_rank > 3:
-        return Verdict(
-            "FAIL", "intended retriever does not surface the expected doc in its top 3"
-        )
-    if comparison_rank is not None and comparison_rank < expected_rank:
-        return Verdict(
-            "FAIL",
-            f"comparison retriever ranks the expected doc better (rank {comparison_rank}) "
-            f"than the intended retriever (rank {expected_rank})",
-        )
-    if comparison_rank is None or comparison_rank - expected_rank >= 2:
-        trail = (
-            f"trails at rank {comparison_rank}"
-            if comparison_rank is not None
-            else f"does not find it within top {RANK_LOOKUP_K}"
-        )
+def _top_result_verdict(expected_rank: int | None, comparison_rank: int | None) -> Verdict:
+    """Rank-1-disagreement verdict shared by the BM25/Vector checks.
+
+    An earlier version of this check used a >=2-rank gap between the two
+    retrievers' best ranks as a proxy for "clean enough contrast to
+    demonstrate." That threshold was an arbitrary choice made during tooling
+    design, with no retrieval-theoretic basis — and it could report AMBIGUOUS
+    even when the intended retriever's top result was already correct and the
+    comparison retriever's was not (e.g. intended=1, comparison=2, a 1-rank
+    gap). What each question is actually meant to demonstrate is top-result
+    disagreement: does the intended retriever put the correct document first
+    while the comparison retriever picks something else first? So the verdict
+    now looks at rank 1 only, symmetrically, on both sides — no secondary-rank
+    gap is considered.
+    """
+    expected_wins = expected_rank == 1
+    comparison_wins = comparison_rank == 1
+    if expected_wins and not comparison_wins:
         return Verdict(
             "PASS",
-            f"intended retriever ranks the expected doc at {expected_rank}; comparison {trail}",
+            "intended retriever ranks an expected doc at #1; comparison retriever "
+            "does not rank any expected doc at #1",
         )
-    return Verdict(
-        "AMBIGUOUS",
-        f"intended retriever wins by only {comparison_rank - expected_rank} rank position(s) "
-        f"(intended={expected_rank}, comparison={comparison_rank}) — contrast too thin",
-    )
+    if expected_wins and comparison_wins:
+        return Verdict(
+            "AMBIGUOUS",
+            "both retrievers rank an expected doc at #1 — no top-result disagreement "
+            "to demonstrate the intended contrast",
+        )
+    if comparison_wins:
+        return Verdict(
+            "FAIL",
+            "comparison retriever ranks an expected doc at #1 while the intended "
+            "retriever does not",
+        )
+    return Verdict("FAIL", "neither retriever ranks an expected doc at #1")
 
 
 def check_bm25_exact_term(q: Question, corpus_lookup: dict[str, dict]) -> tuple[Verdict, dict]:
@@ -229,7 +240,7 @@ def check_bm25_exact_term(q: Question, corpus_lookup: dict[str, dict]) -> tuple[
     vector_results = vector_search(q.question, k=RANK_LOOKUP_K)
     bm25_rank, bm25_doc = _best_rank(bm25_results, q.expected_doc_ids)
     vector_rank, vector_doc = _best_rank(vector_results, q.expected_doc_ids)
-    verdict = _rank_contrast_verdict(bm25_rank, vector_rank)
+    verdict = _top_result_verdict(bm25_rank, vector_rank)
     diagnostics = {
         "bm25_top3": bm25_results[:3],
         "vector_top3": vector_results[:3],
@@ -246,7 +257,7 @@ def check_vector_paraphrase(q: Question, corpus_lookup: dict[str, dict]) -> tupl
     vector_results = vector_search(q.question, k=RANK_LOOKUP_K)
     bm25_rank, bm25_doc = _best_rank(bm25_results, q.expected_doc_ids)
     vector_rank, vector_doc = _best_rank(vector_results, q.expected_doc_ids)
-    verdict = _rank_contrast_verdict(vector_rank, bm25_rank)
+    verdict = _top_result_verdict(vector_rank, bm25_rank)
     diagnostics = {
         "bm25_top3": bm25_results[:3],
         "vector_top3": vector_results[:3],

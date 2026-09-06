@@ -148,6 +148,24 @@ before finalizing its explanation; a question designed to show one retriever win
 actually produce that result until corpus or phrasing is adjusted. No LLM call at runtime for
 explanations.
 
+**BM25-vs-Vector validation rule** (`corpus/validate_questions.py`'s `bm25_exact_term` and
+`vector_paraphrase` checks): the verdict is decided by **rank-1 disagreement only**, checked
+symmetrically for both retrievers against any id in the question's `expected_doc_ids`:
+- **PASS** — the intended retriever ranks an expected doc at #1, and the comparison retriever
+  does not rank any expected doc at #1.
+- **AMBIGUOUS** — both retrievers rank an expected doc at #1 (no disagreement to demonstrate).
+- **FAIL** — the intended retriever does not rank an expected doc at #1, regardless of whether
+  the comparison retriever does.
+
+An earlier version of this check used a `>=2`-rank gap between the two retrievers' best ranks
+as a proxy for "clean enough contrast to demonstrate." That threshold was an arbitrary choice
+made during tooling design, with no retrieval-theoretic basis — and it could report AMBIGUOUS
+even when the intended retriever's top result was already correct and the comparison
+retriever's was not (e.g. intended=1, comparison=2 counted as too thin a margin). The rank-1
+rule instead tests the actual phenomenon each question is meant to demonstrate directly: which
+retriever puts the correct document first. Each retriever's top-3 and the best rank achieved by
+any expected doc are still printed as diagnostics either way — only the verdict logic changed.
+
 ## UI (Gradio)
 
 Dropdown of curated questions + optional free-text box (labeled "unscripted, results may

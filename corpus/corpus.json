@@ -13,6 +13,20 @@
         "scenario_hint": "bm25_exact_term",
         "scenario_group": "hnsw_build_parameter"
     },
+      {
+    "id": "ret_hnsw_search",
+    "text": "The ef_search parameter controls how many candidates are explored during query-time HNSW traversal. Higher values usually improve recall but increase search latency.",
+    "topic_tag": "retrieval.vector_search",
+    "scenario_hint": null,
+    "scenario_group": null
+  },
+  {
+    "id": "ret_hnsw_m",
+    "text": "The HNSW M parameter determines the maximum number of graph connections maintained for each node. Larger values increase memory usage and can improve recall.",
+    "topic_tag": "retrieval.vector_search",
+    "scenario_hint": null,
+    "scenario_group": null
+  },
     {
         "id": "ret_003",
         "text": "Requests to the inference gateway include a configurable gRPC deadline. If a downstream model server does not respond before the deadline elapses, the gateway cancels the call and returns a DEADLINE_EXCEEDED error to the caller rather than waiting indefinitely.",
