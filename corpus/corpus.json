@@ -13,20 +13,20 @@
         "scenario_hint": "bm25_exact_term",
         "scenario_group": "hnsw_build_parameter"
     },
-{
-  "id": "ret_scalar_quantization",
-  "text": "Scalar quantization reduces vector memory usage by representing each embedding dimension with a lower-precision numeric value. It lowers storage requirements and can improve cache efficiency at the cost of some retrieval precision.",
-  "topic_tag": "retrieval.vector_search",
-  "scenario_hint": null,
-  "scenario_group": null
-},
-{
-  "id": "ret_ivf_flat",
-  "text": "IVF-Flat partitions vectors into coarse clusters and searches only the most relevant partitions at query time. Unlike compressed indexes, the vectors themselves remain uncompressed, preserving accuracy while reducing the search space.",
-  "topic_tag": "retrieval.vector_search",
-  "scenario_hint": null,
-  "scenario_group": null
-},
+    {
+        "id": "ret_scalar_quantization",
+        "text": "Scalar quantization reduces vector memory usage by representing each embedding dimension with a lower-precision numeric value. It lowers storage requirements and can improve cache efficiency at the cost of some retrieval precision.",
+        "topic_tag": "retrieval.vector_search",
+        "scenario_hint": null,
+        "scenario_group": null
+    },
+    {
+        "id": "ret_ivf_flat",
+        "text": "IVF-Flat partitions vectors into coarse clusters and searches only the most relevant partitions at query time. Unlike compressed indexes, the vectors themselves remain uncompressed, preserving accuracy while reducing the search space.",
+        "topic_tag": "retrieval.vector_search",
+        "scenario_hint": null,
+        "scenario_group": null
+    },
     {
         "id": "ret_hnsw_search",
         "text": "The ef_search parameter controls how many candidates are explored during query-time HNSW traversal. Higher values usually improve recall but increase search latency.",
