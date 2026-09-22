@@ -59,15 +59,15 @@
         "id": "ret_003",
         "text": "Requests to the inference gateway include a configurable gRPC deadline. If a downstream model server does not respond before the deadline elapses, the gateway cancels the call and returns a DEADLINE_EXCEEDED error to the caller rather than waiting indefinitely.",
         "topic_tag": "inference.serving",
-        "scenario_hint": "bm25_exact_term",
-        "scenario_group": "grpc_deadline"
+        "scenario_hint": null,
+        "scenario_group": null
     },
     {
         "id": "ret_004",
         "text": "The gateway's default per-call timeout is set in the service config and applies uniformly across all backends unless overridden per-route. Routes calling slower models, such as batch-scoring endpoints, commonly override this default to avoid premature cancellation.",
         "topic_tag": "inference.serving",
-        "scenario_hint": "bm25_exact_term",
-        "scenario_group": "grpc_deadline"
+        "scenario_hint": null,
+        "scenario_group": null
     },
     {
         "id": "ret_005",
@@ -101,8 +101,8 @@
         "id": "sec_003",
         "text": "Credentials issued to external integrations are scoped to a narrow set of allowed operations at creation time. An integration that was only granted read access to one resource type cannot be used to modify data or reach unrelated resources, regardless of what the underlying account could otherwise do.",
         "topic_tag": "security.authentication",
-        "scenario_hint": "vector_paraphrase",
-        "scenario_group": "scoped_credential_permissions"
+        "scenario_hint": null,
+        "scenario_group": null
     },
     {
         "id": "mon_001",

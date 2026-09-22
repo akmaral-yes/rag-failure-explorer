@@ -3,23 +3,29 @@
     "question": "What does the ef_construction parameter control?",
     "scenario_type": "bm25_exact_term",
     "expected_winner": "bm25",
-    "expected_doc_ids": ["ret_001"],
+    "expected_doc_ids": [
+      "ret_001"
+    ],
     "example_role": "showcase",
     "explanation": "BM25 ranks the exact parameter document first, while vector search prefers the semantically adjacent ef_search document."
   },
-{
-  "question": "What does the ef_search parameter control?",
-  "scenario_type": "bm25_exact_term",
-  "expected_winner": "bm25",
-  "expected_doc_ids": ["ret_hnsw_search"],
-  "example_role": "finding",
-  "explanation": "Both BM25 and vector rank ret_hnsw_search first. Notably, vector also ranks this same document first for the ef_construction query — it has a consistent bias toward this doc across the near-twin pair. That asymmetry is why the ef_construction question produces a BM25 advantage while this mirror question does not."
-},
+  {
+    "question": "What does the ef_search parameter control?",
+    "scenario_type": "bm25_exact_term",
+    "expected_winner": "bm25",
+    "expected_doc_ids": [
+      "ret_hnsw_search"
+    ],
+    "example_role": "finding",
+    "explanation": "Both BM25 and vector rank ret_hnsw_search first. Notably, vector also ranks this same document first for the ef_construction query — it has a consistent bias toward this doc across the near-twin pair. That asymmetry is why the ef_construction question produces a BM25 advantage while this mirror question does not."
+  },
   {
     "question": "What is IVF-PQ used for in the vector store?",
     "scenario_type": "bm25_exact_term",
     "expected_winner": "bm25",
-    "expected_doc_ids": ["ret_005"],
+    "expected_doc_ids": [
+      "ret_005"
+    ],
     "example_role": "finding",
     "explanation": "Both BM25 and vector rank ret_005 first. IVF-PQ is distinctive enough semantically that vector retrieves it as confidently as BM25, showing that an exact technical term does not automatically create a BM25 advantage."
   },
@@ -27,22 +33,72 @@
     "question": "What happens if a user's login token runs out in the middle of a session?",
     "scenario_type": "vector_paraphrase",
     "expected_winner": "vector",
-    "expected_doc_ids": ["sec_001"],
+    "expected_doc_ids": [
+      "sec_001"
+    ],
     "example_role": "showcase",
-    "explanation": "DRAFT — alternate phrasing, closer to 'session'/'login' framing rather than 'API calls.'"
+    "explanation": "Vector ranks sec_001 first while BM25's top result is sec_002 instead — the paraphrase ('login token runs out mid-session') avoids the document's literal terms ('validity window,' 'refresh credential'), so semantic search correctly identifies the intended document while lexical matching latches onto a different, more literally similar doc."
   },
-{
-  "question": "Does removing one employee's ability to sign in also stop automated processes that operate independently of them?",
-  "scenario_type": "vector_paraphrase",
-  "expected_winner": "vector",
-  "expected_doc_ids": ["sec_002"],
-  "explanation": "DRAFT — tests whether 'background process' maps semantically to 'service accounts... not tied to an individual's login session' without reusing that vocabulary."
-},
-{
-  "question": "If a third-party tool was only given permission to view certain data, could it still make changes elsewhere in the system?",
-  "scenario_type": "vector_paraphrase",
-  "expected_winner": "vector",
-  "expected_doc_ids": ["sec_003"],
-  "explanation": "DRAFT — tests whether 'external app' and 'permission to modify' map to 'credentials issued to external integrations... scoped to a narrow set of allowed operations' without reusing that phrasing."
-}
+  {
+    "question": "Can an automated system keep calling the API even when no person is actively logged in?",
+    "scenario_type": "vector_paraphrase",
+    "expected_winner": "vector",
+    "expected_doc_ids": [
+      "sec_002"
+    ],
+    "example_role": "showcase",
+    "explanation": "Vector ranks sec_002 first while BM25 doesn't retrieve it at all — the question ('automated system... no person actively logged in') shares no content words with the document's actual text ('service accounts... not tied to an individual's login session'), so lexical matching has nothing to grab while semantic search maps the meaning cleanly."
+  },
+  {
+    "question": "How do we know something is wrong with the service?",
+    "scenario_type": "multi_query_ambiguous",
+    "expected_winner": "multi_query",
+    "expected_scenario_group": "service_health_signals",
+    "example_role": "showcase",
+    "explanation": "A single vector search for this ambiguous query surfaces only 2 of the 4 documents covering distinct service-health signals. Multi-Query generates several rephrased variants, and their combined results cover all 4 signals — latency, errors, model drift, and canary rollout safety — showing that query expansion broadens coverage when one phrasing can't anticipate every way a concern might be described."
+  },
+  {
+    "question": "What signals tell us that a model deployment is unhealthy?",
+    "scenario_type": "multi_query_ambiguous",
+    "expected_winner": "multi_query",
+    "expected_scenario_group": "service_health_signals",
+    "example_role": "finding",
+    "explanation": "This query is specific enough that a single vector search already covers the same facets Multi-Query's expanded variants cover, so the generated variants surface no additional relevant document. Multi-Query's coverage benefit is conditional: it helps on genuinely under-specified queries, but adds nothing when the original query is already well-targeted."
+  },
+  {
+    "question": "What happens when an account exceeds its API request limits?",
+    "scenario_type": "mmr_near_duplicate",
+    "expected_winner": "mmr",
+    "expected_scenario_group": "rate_limit_restated",
+    "example_role": "showcase",
+    "explanation": "A plain vector search for this query returns 3 near-duplicate documents that all restate the same rate-limiting fact from different angles. MMR's diversity-aware re-ranking drops one of these duplicates and introduces a distinct but still relevant result instead, showing that MMR trades redundant relevance for informational variety rather than returning the top-k most similar chunks unconditionally."
+  },
+  {
+    "question": "What happens after an account hits its API rate limit?",
+    "scenario_type": "mmr_near_duplicate",
+    "expected_winner": "mmr",
+    "expected_scenario_group": "rate_limit_restated",
+    "example_role": "showcase",
+    "explanation": "A plain vector search for this query returns 3 near-duplicate documents restating the same rate-limit fact. MMR drops one duplicate and introduces a latency-monitoring document instead — a plausible but less obviously relevant substitution than a clean topic swap, illustrating that MMR's diversity trade-off doesn't guarantee the replacement is equally on-topic, only that it isn't redundant."
+  },
+  {
+    "question": "How does the platform avoid losing information when a sentence spans two chunks?",
+    "scenario_type": "parent_child_hierarchy",
+    "expected_winner": "parent_child",
+    "expected_doc_ids": [
+      "inference_service_guide::chunking"
+    ],
+    "example_role": "showcase",
+    "explanation": "The matching child chunk covers only the overlap mechanism in isolation. ParentDocumentRetriever resolves it back to the full Chunking section, which also covers segment size, metadata preservation, and the relationship to indexing — restoring the surrounding context needed to fully answer how information near a chunk boundary is preserved."
+  },
+  {
+    "question": "How does the index map a retrieved segment back to the larger parent content it came from?",
+    "scenario_type": "parent_child_hierarchy",
+    "expected_winner": "parent_child",
+    "expected_doc_ids": [
+      "inference_service_guide::indexing"
+    ],
+    "example_role": "showcase",
+    "explanation": "The matching child chunk covers only the parent-span identifier mechanism in isolation. ParentDocumentRetriever resolves it back to the full Indexing section, which also covers when embedding happens, restoring the surrounding context needed to explain how a retrieved segment maps back to its source."
+  }
 ]
