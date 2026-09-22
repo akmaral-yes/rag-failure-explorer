@@ -20,7 +20,7 @@ def _raw_corpus_entries() -> list[dict]:
 
 def test_load_corpus_documents_count():
     documents = load_corpus_documents()
-    assert len(documents) == 23
+    assert len(documents) == 27
 
 
 def test_short_docs_not_split_one_to_one_mapping():

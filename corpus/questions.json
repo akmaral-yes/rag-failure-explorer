@@ -1,0 +1,48 @@
+[
+  {
+    "question": "What does the ef_construction parameter control?",
+    "scenario_type": "bm25_exact_term",
+    "expected_winner": "bm25",
+    "expected_doc_ids": ["ret_001"],
+    "example_role": "showcase",
+    "explanation": "BM25 ranks the exact parameter document first, while vector search prefers the semantically adjacent ef_search document."
+  },
+{
+  "question": "What does the ef_search parameter control?",
+  "scenario_type": "bm25_exact_term",
+  "expected_winner": "bm25",
+  "expected_doc_ids": ["ret_hnsw_search"],
+  "example_role": "finding",
+  "explanation": "Both BM25 and vector rank ret_hnsw_search first. Notably, vector also ranks this same document first for the ef_construction query — it has a consistent bias toward this doc across the near-twin pair. That asymmetry is why the ef_construction question produces a BM25 advantage while this mirror question does not."
+},
+  {
+    "question": "What is IVF-PQ used for in the vector store?",
+    "scenario_type": "bm25_exact_term",
+    "expected_winner": "bm25",
+    "expected_doc_ids": ["ret_005"],
+    "example_role": "finding",
+    "explanation": "Both BM25 and vector rank ret_005 first. IVF-PQ is distinctive enough semantically that vector retrieves it as confidently as BM25, showing that an exact technical term does not automatically create a BM25 advantage."
+  },
+  {
+    "question": "What happens if a user's login token runs out in the middle of a session?",
+    "scenario_type": "vector_paraphrase",
+    "expected_winner": "vector",
+    "expected_doc_ids": ["sec_001"],
+    "example_role": "showcase",
+    "explanation": "DRAFT — alternate phrasing, closer to 'session'/'login' framing rather than 'API calls.'"
+  },
+{
+  "question": "Does removing one employee's ability to sign in also stop automated processes that operate independently of them?",
+  "scenario_type": "vector_paraphrase",
+  "expected_winner": "vector",
+  "expected_doc_ids": ["sec_002"],
+  "explanation": "DRAFT — tests whether 'background process' maps semantically to 'service accounts... not tied to an individual's login session' without reusing that vocabulary."
+},
+{
+  "question": "If a third-party tool was only given permission to view certain data, could it still make changes elsewhere in the system?",
+  "scenario_type": "vector_paraphrase",
+  "expected_winner": "vector",
+  "expected_doc_ids": ["sec_003"],
+  "explanation": "DRAFT — tests whether 'external app' and 'permission to modify' map to 'credentials issued to external integrations... scoped to a narrow set of allowed operations' without reusing that phrasing."
+}
+]

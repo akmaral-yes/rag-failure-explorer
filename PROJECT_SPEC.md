@@ -148,6 +148,21 @@ before finalizing its explanation; a question designed to show one retriever win
 actually produce that result until corpus or phrasing is adjusted. No LLM call at runtime for
 explanations.
 
+**`example_role`** — `"showcase"` or `"finding"`, set per question:
+- `"showcase"` — the question is meant to demonstrate its `scenario_type`'s mechanism cleanly;
+  `just validate` treats a non-PASS showcase question as needing iteration, same as before this
+  field existed.
+- `"finding"` — an empirically interesting *non-showcase* result that's kept intentionally: the
+  observed retriever behavior is informative even though the intended retriever doesn't win
+  cleanly (e.g. two retrievers agreeing on the same top result, or an exact technical term that
+  doesn't actually produce a BM25 advantage). AMBIGUOUS — or any other non-PASS verdict — on a
+  finding is not considered unresolved; `just validate` never lists a finding as needing
+  iteration, and reports retained-findings counts separately from showcase pass/fail counts.
+
+Curated questions should set `example_role` explicitly going forward. `corpus/validate_questions.py`
+defaults a missing `example_role` to `"showcase"` only for backward compatibility with questions
+written before this field existed — new questions shouldn't rely on that default.
+
 **BM25-vs-Vector validation rule** (`corpus/validate_questions.py`'s `bm25_exact_term` and
 `vector_paraphrase` checks): the verdict is decided by **rank-1 disagreement only**, checked
 symmetrically for both retrievers against any id in the question's `expected_doc_ids`:

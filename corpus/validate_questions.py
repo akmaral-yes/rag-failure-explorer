@@ -45,6 +45,14 @@ SCENARIO_TYPE_TO_WINNER = {
 SCENARIO_TYPES = set(SCENARIO_TYPE_TO_WINNER)
 WINNERS = set(SCENARIO_TYPE_TO_WINNER.values())
 
+# "showcase" — the question is meant to demonstrate a clean mechanism win.
+# "finding" — the observed result itself is kept as informative even though the
+# intended retriever doesn't win cleanly; see PROJECT_SPEC.md's Question Set
+# section. Missing example_role defaults to "showcase" for backward
+# compatibility with questions written before this field existed.
+EXAMPLE_ROLES = {"showcase", "finding"}
+DEFAULT_EXAMPLE_ROLE = "showcase"
+
 # Per scenario_type, which optional field is required to actually validate it.
 REQUIRED_FIELD_BY_SCENARIO = {
     "bm25_exact_term": "expected_doc_ids",
@@ -65,6 +73,7 @@ class Question:
     expected_doc_ids: list[str] = field(default_factory=list)
     expected_scenario_group: str | None = None
     explanation: str | None = None
+    example_role: str = DEFAULT_EXAMPLE_ROLE
 
 
 @dataclass
@@ -166,6 +175,14 @@ def validate_question(
     if explanation is not None and not isinstance(explanation, str):
         errors.append("'explanation' must be a string")
 
+    example_role = raw.get("example_role")
+    if example_role is None:
+        example_role = DEFAULT_EXAMPLE_ROLE
+    elif example_role not in EXAMPLE_ROLES:
+        errors.append(
+            f"'example_role' must be one of {sorted(EXAMPLE_ROLES)}, got {example_role!r}"
+        )
+
     if errors:
         return None, errors
 
@@ -177,6 +194,7 @@ def validate_question(
             expected_doc_ids=list(expected_doc_ids) if expected_doc_ids else [],
             expected_scenario_group=expected_scenario_group,
             explanation=explanation,
+            example_role=example_role,
         ),
         [],
     )
@@ -448,7 +466,9 @@ def main() -> None:
 
     corpus_lookup, valid_doc_ids = _build_corpus_context()
 
-    counts = _new_scenario_counts()
+    counts = _new_scenario_counts()  # all questions, every role, incl. malformed
+    showcase_counts = _new_scenario_counts()  # showcase questions + malformed entries
+    finding_counts = _new_scenario_counts()  # finding questions only (informational)
     by_scenario: dict[str, dict[str, int]] = {}
     needs_iteration: list[str] = []
 
@@ -458,6 +478,7 @@ def main() -> None:
 
         if errors:
             counts["MALFORMED"] += 1
+            showcase_counts["MALFORMED"] += 1
             question_text = raw.get("question") if isinstance(raw, dict) else None
             scenario_type = raw.get("scenario_type") if isinstance(raw, dict) else None
             label = f"malformed:{scenario_type!r}"
@@ -472,6 +493,7 @@ def main() -> None:
 
         print(f"question: {question.question!r}")
         print(f"scenario_type={question.scenario_type} expected_winner={question.expected_winner}")
+        print(f"example_role={question.example_role}")
         if question.expected_doc_ids:
             print(f"expected_doc_ids={question.expected_doc_ids}")
         if question.expected_scenario_group:
@@ -481,18 +503,37 @@ def main() -> None:
         verdict, diagnostics = check(question, corpus_lookup)
         _print_diagnostics(diagnostics)
         print(f"verdict: {verdict.status} — {verdict.reason}")
+        is_finding = question.example_role == "finding"
+        if is_finding:
+            print("FINDING (kept as an informative non-showcase result)")
 
         counts[verdict.status] += 1
         by_scenario.setdefault(question.scenario_type, _new_scenario_counts())
         by_scenario[question.scenario_type][verdict.status] += 1
-        if verdict.status != "PASS":
-            needs_iteration.append(question.question)
+
+        if is_finding:
+            finding_counts[verdict.status] += 1
+        else:
+            showcase_counts[verdict.status] += 1
+            if verdict.status != "PASS":
+                needs_iteration.append(question.question)
 
     total = sum(counts.values())
+    total_findings = sum(finding_counts.values())
     print("\n=== Summary ===")
     print(
-        f"{counts['PASS']} PASS / {counts['FAIL']} FAIL / {counts['AMBIGUOUS']} AMBIGUOUS / "
-        f"{counts['MALFORMED']} MALFORMED / {total} total"
+        f"All questions: {counts['PASS']} PASS / {counts['FAIL']} FAIL / "
+        f"{counts['AMBIGUOUS']} AMBIGUOUS / {counts['MALFORMED']} MALFORMED / {total} total"
+    )
+    print(
+        "Showcase questions (+ malformed entries): "
+        f"{showcase_counts['PASS']} PASS / {showcase_counts['FAIL']} FAIL / "
+        f"{showcase_counts['AMBIGUOUS']} AMBIGUOUS / {showcase_counts['MALFORMED']} MALFORMED"
+    )
+    print(
+        f"Findings retained: {total_findings} "
+        f"(PASS={finding_counts['PASS']} FAIL={finding_counts['FAIL']} "
+        f"AMBIGUOUS={finding_counts['AMBIGUOUS']}) — never listed as needing iteration"
     )
 
     print("\nBy scenario_type:")
@@ -500,7 +541,7 @@ def main() -> None:
         print(f"  {scenario}: {scenario_counts}")
 
     if needs_iteration:
-        print("\nQuestions needing iteration:")
+        print("\nQuestions needing iteration (non-PASS showcase questions + malformed entries):")
         for text in needs_iteration:
             print(f"  - {text}")
 
