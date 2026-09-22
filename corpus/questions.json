@@ -17,7 +17,7 @@
       "ret_hnsw_search"
     ],
     "example_role": "finding",
-    "explanation": "Both BM25 and vector rank ret_hnsw_search first. Notably, vector also ranks this same document first for the ef_construction query — it has a consistent bias toward this doc across the near-twin pair. That asymmetry is why the ef_construction question produces a BM25 advantage while this mirror question does not."
+    "explanation": "Both BM25 and vector rank ret_hnsw_search first. Vector also ranks this same document first for the ef_construction query, showing a consistent preference for this document across the near-twin pair. That asymmetry is why the ef_construction question produces a BM25 advantage while this mirror question does not."
   },
   {
     "question": "What is IVF-PQ used for in the vector store?",
@@ -27,7 +27,7 @@
       "ret_005"
     ],
     "example_role": "finding",
-    "explanation": "Both BM25 and vector rank ret_005 first. IVF-PQ is distinctive enough semantically that vector retrieves it as confidently as BM25, showing that an exact technical term does not automatically create a BM25 advantage."
+    "explanation": "Both BM25 and vector rank ret_005 first. IVF-PQ is distinctive enough semantically that vector search identifies the same document as confidently as BM25, showing that an exact technical term does not automatically create a BM25 advantage."
   },
   {
     "question": "What happens if a user's login token runs out in the middle of a session?",
@@ -37,7 +37,7 @@
       "sec_001"
     ],
     "example_role": "showcase",
-    "explanation": "Vector ranks sec_001 first while BM25's top result is sec_002 instead — the paraphrase ('login token runs out mid-session') avoids the document's literal terms ('validity window,' 'refresh credential'), so semantic search correctly identifies the intended document while lexical matching latches onto a different, more literally similar doc."
+    "explanation": "Vector ranks sec_001 first while BM25's top result is sec_002 instead. The paraphrase 'login token runs out mid-session' avoids much of the document's literal wording, such as 'validity window' and 'refresh credential', so semantic search identifies the intended document while lexical matching favors a different, more literally similar result."
   },
   {
     "question": "Can an automated system keep calling the API even when no person is actively logged in?",
@@ -47,7 +47,7 @@
       "sec_002"
     ],
     "example_role": "showcase",
-    "explanation": "Vector ranks sec_002 first while BM25 doesn't retrieve it at all — the question ('automated system... no person actively logged in') shares no content words with the document's actual text ('service accounts... not tied to an individual's login session'), so lexical matching has nothing to grab while semantic search maps the meaning cleanly."
+    "explanation": "Vector ranks sec_002 first while BM25 does not surface it in the top results. The question's phrasing, such as 'automated system' and 'no person is actively logged in', has very little lexical overlap with the document's terminology, such as 'service accounts', 'machine-to-machine', and 'login session', so semantic search maps the meaning more effectively."
   },
   {
     "question": "How do we know something is wrong with the service?",
@@ -55,7 +55,7 @@
     "expected_winner": "multi_query",
     "expected_scenario_group": "service_health_signals",
     "example_role": "showcase",
-    "explanation": "A single vector search for this ambiguous query surfaces only 2 of the 4 documents covering distinct service-health signals. Multi-Query generates several rephrased variants, and their combined results cover all 4 signals — latency, errors, model drift, and canary rollout safety — showing that query expansion broadens coverage when one phrasing can't anticipate every way a concern might be described."
+    "explanation": "A single vector search for this ambiguous query surfaces only 2 of the 4 documents covering distinct service-health signals. Multi-Query generates several rephrased variants, and their combined results cover all 4 signals: latency, errors, model drift, and canary rollout safety. This shows how query expansion can broaden coverage when one phrasing does not capture every relevant interpretation."
   },
   {
     "question": "What signals tell us that a model deployment is unhealthy?",
@@ -63,7 +63,7 @@
     "expected_winner": "multi_query",
     "expected_scenario_group": "service_health_signals",
     "example_role": "finding",
-    "explanation": "This query is specific enough that a single vector search already covers the same facets Multi-Query's expanded variants cover, so the generated variants surface no additional relevant document. Multi-Query's coverage benefit is conditional: it helps on genuinely under-specified queries, but adds nothing when the original query is already well-targeted."
+    "explanation": "This query is specific enough that a single vector search already covers the same relevant facets as the Multi-Query variants. The generated reformulations therefore add no additional scenario-group coverage, showing that Multi-Query's benefit is conditional rather than universal."
   },
   {
     "question": "What happens when an account exceeds its API request limits?",
@@ -71,7 +71,7 @@
     "expected_winner": "mmr",
     "expected_scenario_group": "rate_limit_restated",
     "example_role": "showcase",
-    "explanation": "A plain vector search for this query returns 3 near-duplicate documents that all restate the same rate-limiting fact from different angles. MMR's diversity-aware re-ranking drops one of these duplicates and introduces a distinct but still relevant result instead, showing that MMR trades redundant relevance for informational variety rather than returning the top-k most similar chunks unconditionally."
+    "explanation": "A plain vector search returns 3 near-duplicate documents that restate the same rate-limiting behavior from different angles. MMR keeps relevant matches while replacing one redundant result with a distinct result, demonstrating how diversity-aware retrieval can trade some redundancy for broader information coverage."
   },
   {
     "question": "What happens after an account hits its API rate limit?",
@@ -79,7 +79,7 @@
     "expected_winner": "mmr",
     "expected_scenario_group": "rate_limit_restated",
     "example_role": "showcase",
-    "explanation": "A plain vector search for this query returns 3 near-duplicate documents restating the same rate-limit fact. MMR drops one duplicate and introduces a latency-monitoring document instead — a plausible but less obviously relevant substitution than a clean topic swap, illustrating that MMR's diversity trade-off doesn't guarantee the replacement is equally on-topic, only that it isn't redundant."
+    "explanation": "A plain vector search returns 3 near-duplicate documents restating the same rate-limit behavior. MMR removes one duplicate and introduces a latency-monitoring document instead. The replacement is more diverse but less obviously relevant, illustrating that MMR reduces redundancy but does not guarantee that every more-diverse result is equally on-topic."
   },
   {
     "question": "How does the platform avoid losing information when a sentence spans two chunks?",
@@ -89,7 +89,7 @@
       "inference_service_guide::chunking"
     ],
     "example_role": "showcase",
-    "explanation": "The matching child chunk covers only the overlap mechanism in isolation. ParentDocumentRetriever resolves it back to the full Chunking section, which also covers segment size, metadata preservation, and the relationship to indexing — restoring the surrounding context needed to fully answer how information near a chunk boundary is preserved."
+    "explanation": "The matching child chunk focuses narrowly on the overlap mechanism. ParentDocumentRetriever resolves it back to the full Chunking section, which also covers segment size, metadata preservation, and the relationship to indexing, providing broader context around how boundary-spanning information is handled."
   },
   {
     "question": "How does the index map a retrieved segment back to the larger parent content it came from?",
@@ -99,6 +99,6 @@
       "inference_service_guide::indexing"
     ],
     "example_role": "showcase",
-    "explanation": "The matching child chunk covers only the parent-span identifier mechanism in isolation. ParentDocumentRetriever resolves it back to the full Indexing section, which also covers when embedding happens, restoring the surrounding context needed to explain how a retrieved segment maps back to its source."
+    "explanation": "The matching child chunk focuses on the parent-span identifier mechanism. ParentDocumentRetriever resolves it back to the full Indexing section, which also covers when embedding happens, adding surrounding context to the mapping from a retrieved segment back to its larger source span."
   }
 ]
