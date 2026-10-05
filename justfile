@@ -6,7 +6,7 @@ install:
 
 # Launch the Gradio app
 run:
-    uv run python ui/app.py
+    uv run python -m ui.app
 
 # Run the retriever smoke test (Phase 2 sanity check)
 smoke:
