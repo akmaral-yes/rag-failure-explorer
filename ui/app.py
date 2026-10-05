@@ -56,37 +56,83 @@ PARENT_CHILD_DIAGNOSTIC_CAPTION = (
     "Parent-Child result."
 )
 
-# Small, localized presentation pass: card/badge/caption treatment only, built
-# on Gradio's own theme variables (not hardcoded colors) so it stays correct
-# in both light and dark mode. No new components/state, no layout redesign.
+# Presentation only: density, typography, card/badge treatment, and the
+# Parent-Child layout. Built on Gradio's theme variables (not hardcoded colors)
+# so it works in light and dark mode. Gradio prefixes these selectors with its
+# container classes, so they outrank Gradio's defaults.
 CUSTOM_CSS = """
+/* Card shell. The outer block owns the single border, padding and background. */
 .rfe-card {
     border: 1px solid var(--border-color-primary);
     border-radius: 10px;
-    padding: 14px 16px;
-    margin-bottom: 10px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
     background: var(--background-fill-secondary);
 }
+/* Explanation: left accent bar instead of a full box, so it reads apart from results. */
 .rfe-explanation {
     border-left: 4px solid var(--border-color-primary);
     background: var(--background-fill-secondary);
     border-radius: 6px;
-    padding: 12px 16px;
-    margin-top: 6px;
+    padding: 10px 14px;
+    margin-top: 4px;
 }
+/* Muted, smaller secondary text: the score caption and the cross-retriever note. */
 .rfe-caption {
-    font-size: 0.85em;
+    font-size: 13px;
     opacity: 0.75;
-    margin: 2px 0 10px 0;
+    margin: 0 0 6px 0;
 }
 /* Gradio's Markdown renders a .prose child inside each card block that also
-   carries the card class, so the border/padding would otherwise be drawn twice. */
+   carries the card class, so its border/padding would be drawn a second time.
+   Reset the inner element; body text size and line height are set here too. */
 .rfe-card .prose,
 .rfe-explanation .prose {
     border: none;
     background: none;
     padding: 0;
     margin: 0;
+    font-size: 15px;
+    line-height: 1.45;
+}
+.rfe-card .prose p {
+    margin: 0 0 6px 0;
+}
+/* Gap between results inside a card. */
+.rfe-card .prose hr {
+    margin: 8px 0;
+}
+/* Retriever name at the top of a result card: slightly larger than body text. */
+.rfe-card .prose h3:first-child {
+    font-size: 1.05em;
+    margin: 0 0 6px 0;
+}
+/* Headings inside parent text: demoted to bold subheading / bold body size, so
+   they don't dominate the card. Scoped to result cards; content is unchanged. */
+.rfe-card .prose h1,
+.rfe-card .prose h2,
+.rfe-card .prose h3:not(:first-child) {
+    font-size: 1em;
+    font-weight: 700;
+    margin: 6px 0 2px 0;
+}
+/* Secondary score on each result line, muted. */
+.rfe-score {
+    font-size: 13px;
+    opacity: 0.7;
+}
+/* Metadata summary: the italic descriptive sentence drops to caption size. */
+.rfe-meta em {
+    font-size: 13px;
+    opacity: 0.75;
+}
+/* Parent-Child diagnostic column: visually secondary, no target badge. */
+.rfe-diag {
+    opacity: 0.9;
+}
+/* Run button: no strong focus ring after a mouse click; keyboard focus stays visible. */
+.rfe-run:focus:not(:focus-visible) {
+    outline: none;
 }
 /* Equal-height comparison row: the only row containing cards, so stretch its
    columns and let each card fill its column. Works with one visible column too. */
@@ -149,8 +195,6 @@ def _format_retriever_panel(
         # Backtick/badge styling, not a trophy/"winner" visual — emphasis here
         # reflects static curation metadata (this question's example_role and
         # expected winner), never a claim about what the live run just proved.
-        # Visually secondary to the retriever name above it, not a competing
-        # heading.
         header_lines.append(f"`Target method · {name}`")
     if note:
         header_lines.append(f"_{note}_")
@@ -160,28 +204,28 @@ def _format_retriever_panel(
     if not top:
         return f"{header}\n\n_No results._"
 
-    # Rank + source_doc_id lead each block (bold + code, most prominent);
-    # score sits on its own line right under them, in italics, since it's
-    # retriever-specific and secondary to rank. A rule separates entries for
-    # readability when content runs long (e.g. Parent-Child sections).
+    # One line per result: rank and source_doc_id prominent, score muted after
+    # them. The result text follows directly below. Rules separate entries.
     blocks = []
     for r in top:
-        score_line = ""
+        score_part = ""
         if r["score"] is not None:
-            score_line = f"  \n_score: {r['score']:.4f} ({r['score_label']})_"
-        blocks.append(f"**#{r['rank']}** `{r['source_doc_id']}`{score_line}\n\n{r['content']}")
+            score_part = f' · <span class="rfe-score">score {r["score"]:.4f} ({r["score_label"]})</span>'
+        blocks.append(f"**#{r['rank']}** `{r['source_doc_id']}`{score_part}\n\n{r['content']}")
     return f"{header}\n\n" + "\n\n---\n\n".join(blocks)
 
 
-def _format_child_hits(child_hits: list[dict]) -> str:
+def _format_parent_child_diagnostics(child_hits: list[dict]) -> str:
+    heading = "**Matched child chunks (diagnostic)**"
+    caption = f"_{PARENT_CHILD_DIAGNOSTIC_CAPTION}_"
     if not child_hits:
-        return "_No child hits._"
+        return f"{heading}\n\n{caption}\n\n_No child hits._"
     blocks = [
-        f"**child_score:** {hit['child_score']:.4f} → "
-        f"**resolved parent:** `{hit['resolved_parent_id']}`\n\n{hit['child_content']}"
+        f"`child_score {hit['child_score']:.4f}` → resolved parent `{hit['resolved_parent_id']}`"
+        f"\n\n{hit['child_content']}"
         for hit in child_hits[:3]
     ]
-    return "\n\n---\n\n".join(blocks)
+    return f"{heading}\n\n{caption}\n\n" + "\n\n---\n\n".join(blocks)
 
 
 def _render_metadata(q: Question) -> str:
@@ -199,10 +243,8 @@ def _render_metadata(q: Question) -> str:
             "this result is intentionally retained as an informative finding, not a clean win."
         )
     return (
-        f"#### {scenario_name}\n\n"
-        f"**Role:** `{role_label}`  ·  **Target method:** `{target_label}`\n\n"
-        f"**Question:** {q.question}\n\n"
-        f"_{narrative}_"
+        f"**{scenario_name}**  ·  `{role_label}`  ·  `Target method · {target_label}`\n\n"
+        f"**Question:** {q.question}  _{narrative}_"
     )
 
 
@@ -220,9 +262,7 @@ def on_select(index: int | None):
             gr.update(value="", visible=False),
             gr.update(visible=False),
             "",
-            gr.update(visible=False),
-            gr.update(visible=False),
-            "",
+            gr.update(value="", visible=False),
         )
     q = QUESTIONS[index]
     return (
@@ -232,9 +272,7 @@ def on_select(index: int | None):
         gr.update(value="", visible=False),
         gr.update(visible=False),
         "",
-        gr.update(visible=False),
-        gr.update(visible=False),
-        "",
+        gr.update(value="", visible=False),
     )
 
 
@@ -245,9 +283,7 @@ def on_run(index: int | None):
             gr.update(value="", visible=False),
             gr.update(visible=False),
             "",
-            gr.update(visible=False),
-            gr.update(visible=False),
-            "",
+            gr.update(value="", visible=False),
         )
 
     q = QUESTIONS[index]
@@ -262,9 +298,7 @@ def on_run(index: int | None):
             gr.update(value=col_b, visible=True),
             gr.update(visible=False),
             "",
-            gr.update(visible=False),
-            gr.update(visible=False),
-            "",
+            gr.update(value="", visible=False),
         )
 
     if q.scenario_type == "multi_query_ambiguous":
@@ -281,9 +315,7 @@ def on_run(index: int | None):
             gr.update(value=col_b, visible=True),
             gr.update(visible=bool(variants), open=False),
             variants_md,
-            gr.update(visible=False),
-            gr.update(visible=False),
-            "",
+            gr.update(value="", visible=False),
         )
 
     if q.scenario_type == "mmr_near_duplicate":
@@ -296,12 +328,11 @@ def on_run(index: int | None):
             gr.update(value=col_b, visible=True),
             gr.update(visible=False),
             "",
-            gr.update(visible=False),
-            gr.update(visible=False),
-            "",
+            gr.update(value="", visible=False),
         )
 
-    # parent_child_hierarchy: single primary column, child hits are diagnostic-only.
+    # parent_child_hierarchy: resolved parents on the left (the result), matched
+    # child chunks on the right (diagnostic only, never the final result).
     parent_results = parent_child_search(q.question, k=DEFAULT_K)
     child_hits = debug_child_hits(q.question, k=DEFAULT_K)
     col_a = _format_retriever_panel(
@@ -312,9 +343,7 @@ def on_run(index: int | None):
         gr.update(value="", visible=False),
         gr.update(visible=False),
         "",
-        gr.update(visible=True),
-        gr.update(visible=True, open=False),
-        _format_child_hits(child_hits),
+        gr.update(value=_format_parent_child_diagnostics(child_hits), visible=True),
     )
 
 
@@ -341,13 +370,12 @@ with gr.Blocks(title="RAG Failure Explorer") as demo:
             value=dropdown_labels[0] if dropdown_labels else None,
             scale=4,
         )
-        run_btn = gr.Button("Run retrieval", variant="primary", scale=1)
+        run_btn = gr.Button("Run retrieval", variant="primary", scale=1, elem_classes=["rfe-run"])
 
-    metadata_md = gr.Markdown(elem_classes=["rfe-card"])
+    metadata_md = gr.Markdown(elem_classes=["rfe-card", "rfe-meta"])
 
-    # Placed here (between the metadata card and the retriever comparison
-    # row) rather than after the results, so it's read as context for the
-    # comparison about to be shown, not an afterthought below it.
+    # Between the metadata card and the retriever comparison row, so it reads as
+    # context for the comparison about to be shown.
     gr.Markdown(CROSS_RETRIEVER_CAPTION, elem_classes=["rfe-caption"])
 
     with gr.Row():
@@ -355,17 +383,11 @@ with gr.Blocks(title="RAG Failure Explorer") as demo:
             col_a_md = gr.Markdown(visible=False, elem_classes=["rfe-card"])
         with gr.Column():
             col_b_md = gr.Markdown(visible=False, elem_classes=["rfe-card"])
+            # Parent-Child only: child-chunk diagnostics sit in the second column.
+            pc_diag_md = gr.Markdown(visible=False, elem_classes=["rfe-card", "rfe-diag"])
 
     with gr.Accordion("Generated query variants", open=False, visible=False) as mq_accordion:
         mq_variants_md = gr.Markdown()
-
-    pc_caption_md = gr.Markdown(
-        value=PARENT_CHILD_DIAGNOSTIC_CAPTION, visible=False, elem_classes=["rfe-caption"]
-    )
-    with gr.Accordion(
-        "Matched child chunks (diagnostic)", open=False, visible=False
-    ) as pc_accordion:
-        pc_debug_md = gr.Markdown()
 
     explanation_md = gr.Markdown(elem_classes=["rfe-explanation"])
 
@@ -376,19 +398,9 @@ with gr.Blocks(title="RAG Failure Explorer") as demo:
         col_b_md,
         mq_accordion,
         mq_variants_md,
-        pc_caption_md,
-        pc_accordion,
-        pc_debug_md,
+        pc_diag_md,
     ]
-    OUTPUTS_RUN = [
-        col_a_md,
-        col_b_md,
-        mq_accordion,
-        mq_variants_md,
-        pc_caption_md,
-        pc_accordion,
-        pc_debug_md,
-    ]
+    OUTPUTS_RUN = [col_a_md, col_b_md, mq_accordion, mq_variants_md, pc_diag_md]
 
     question_dropdown.change(fn=on_select, inputs=[question_dropdown], outputs=OUTPUTS_SELECT)
     run_btn.click(fn=on_run, inputs=[question_dropdown], outputs=OUTPUTS_RUN)
