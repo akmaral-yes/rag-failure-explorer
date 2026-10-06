@@ -48,7 +48,11 @@ def load_long_doc_parents() -> list[Document]:
     `inference_service_guide::<slug>` stored in metadata["parent_id"] — never a
     generated UUID or positional index.
     """
-    markdown_text = LONG_DOC_PATH.read_text()
+    # Drop the "# ..." title before splitting: with strip_headers=False, the splitter
+    # would otherwise merge this header-only chunk into the first "##" section.
+    markdown_text = re.sub(
+        r"\A.*?(?=^## )", "", LONG_DOC_PATH.read_text(), flags=re.DOTALL | re.MULTILINE
+    )
     splitter = MarkdownHeaderTextSplitter(
         headers_to_split_on=[("##", "Header 2")],
         strip_headers=False,
