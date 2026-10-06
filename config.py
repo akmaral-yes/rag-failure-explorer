@@ -13,8 +13,7 @@ LLM_MODEL = "gpt-4o-mini"
 
 DEFAULT_K = 3
 
-# MMR parameters are initial experiment parameters, not tuned constants — Phase 3
-# validation sweeps fetch_k in {6, 10} and lambda_mult in {0.3, 0.5, 0.7} to confirm
-# the diversity effect isn't an artifact of one arbitrary setting.
+# Initial MMR experiment parameters. Not tuned: no sweep over fetch_k or
+# lambda_mult was run.
 MMR_FETCH_K = 10
 MMR_LAMBDA_MULT = 0.5

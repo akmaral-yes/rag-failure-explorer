@@ -100,8 +100,8 @@ alike). Instead:
 **MMR parameters are initial experiment parameters, not fixed constants.** Starting point:
 `k=3, fetch_k=10, lambda_mult=0.5`. Given the corpus is only ~20 short docs, `fetch_k=10`
 already considers a large share of the collection — during Phase 3 validation, test
-`fetch_k ∈ {6, 10}` and `lambda_mult ∈ {0.3, 0.5, 0.7}` to confirm the diversity effect isn't
-an artifact of one arbitrary setting, not to run a full tuning study.
+`fetch_k ∈ {6, 10}` and `lambda_mult ∈ {0.3, 0.5, 0.7}` (not performed) to confirm the diversity
+effect isn't an artifact of one arbitrary setting, not to run a full tuning study.
 
 **Multi-Query k semantics:** the base retriever retrieves `k=3` per generated query variation,
 then `MultiQueryRetriever` returns the unique union across all variations — this can exceed 3
@@ -139,6 +139,8 @@ Show pre-written, question-specific explanation
 ```
 
 ## Question Set
+
+Actual outcome: 11 curated questions (8 showcases, 3 findings) rather than 15-20; the planned MMR parameter sweep was not performed.
 
 `corpus/questions.json` — list of `{question, scenario_type, expected_winner, explanation}`.
 `expected_winner` used for validation (`just validate`), not shown to the user before they run
