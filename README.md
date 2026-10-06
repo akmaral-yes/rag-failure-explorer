@@ -93,10 +93,10 @@ The two Vector showcases behave differently and are described separately.
 - Matching happens against small child chunks. `ParentDocumentRetriever` returns the larger parent section they belong to.
 - The Chunking showcase resolves to `inference_service_guide::chunking` at rank 1. The Indexing showcase resolves to `inference_service_guide::indexing` at rank 1.
 - The diagnostic child hits explain which chunks matched. They are debugging information, not the canonical returned result.
-- Child chunks come from a character-based splitter and can start or end mid-sentence, so the diagnostic panel can show fragments (visible in the Demo below).
+- Child chunks come from a character-based splitter and can start or end mid-sentence, so the diagnostic panel can show fragments (visible in the UI examples below).
 - These examples demonstrate context recovery, not universal superiority.
 
-## Demo
+## UI examples
 
 <details>
 <summary>View UI examples</summary>
