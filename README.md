@@ -1,32 +1,8 @@
 # RAG Failure Explorer
 
+A controlled playground for understanding when common RAG retrieval strategies succeed, fail, or add little value.
+
 Retrieval is not one-size-fits-all. This project compares five retrieval strategies (BM25, vector search, Multi-Query, MMR, and Parent-Child) on a small hand-designed corpus. Each curated question is a controlled example that shows when a retrieval mechanism helps, when it does not, and why. It does not try to name a single "best" retriever. It retrieves and compares documents only; it does not generate answers.
-
-## Screenshots
-**Question: BM25 and Vector side by side for "What does the ef_construction parameter control?"**
-<a href="docs/images/bm25-showcase.png">
-  <img src="docs/images/bm25-showcase.png" width="830"
-       alt="BM25 and Vector results for the ef_construction question">
-</a>
-
-**Question: Vector's top 3 against the top 3 of the Multi-Query union (5 unique results).**
-<a href="docs/images/multi-query-showcase.png">
-  <img src="docs/images/multi-query-showcase.png" width="830"
-       alt="Vector and Multi-Query results for the service-health question">
-</a>
-
-**Question: How does the index map a retrieved segment back to the larger parent content it came from?**
-
-<a href="docs/images/parent-child.png">
-  <img src="docs/images/parent-child.png" width="830"
-       alt="Parent-Child result for the index-mapping question">
-</a>
-<a href="docs/images/parent-child-why.png">
-  <img src="docs/images/parent-child-why.png" width="830"
-       alt="Explanation of the Parent-Child index-mapping example">
-</a>
-
-
 
 ## What the project does
 
@@ -79,6 +55,7 @@ Implementation details:
 - Vector, MMR, and Multi-Query reuse one in-memory Chroma store with `text-embedding-3-small`; BM25 uses a separate lexical index.
 - Parent-Child matches smaller child chunks and returns their larger parent section; child hits are shown only as diagnostics.
 - `corpus/validate_questions.py` runs the scenario-specific validation logic, while `ui/app.py` exposes the same curated experiments through Gradio.
+
 ## Key findings
 
 These are observations from one small hand-designed corpus and 11 questions. They are not general laws. A weak showcase candidate can reflect question design rather than a retriever failure.
@@ -116,8 +93,40 @@ The two Vector showcases behave differently and are described separately.
 - Matching happens against small child chunks. `ParentDocumentRetriever` returns the larger parent section they belong to.
 - The Chunking showcase resolves to `inference_service_guide::chunking` at rank 1. The Indexing showcase resolves to `inference_service_guide::indexing` at rank 1.
 - The diagnostic child hits explain which chunks matched. They are debugging information, not the canonical returned result.
-- Child chunks come from a character-based splitter and can start or end mid-sentence, so the diagnostic panel can show fragments (visible in the screenshot).
+- Child chunks come from a character-based splitter and can start or end mid-sentence, so the diagnostic panel can show fragments (visible in the UI examples below).
 - These examples demonstrate context recovery, not universal superiority.
+
+## UI examples
+
+<details>
+<summary>View UI examples</summary>
+
+**Showcase: BM25 and Vector side by side for "What does the ef_construction parameter control?"**
+
+<a href="docs/images/bm25-showcase.png">
+  <img src="docs/images/bm25-showcase.png" width="830"
+       alt="BM25 and Vector results for the ef_construction question">
+</a>
+
+**Showcase: Vector's top 3 against the top 3 of the Multi-Query union (5 unique results).**
+
+<a href="docs/images/multi-query-showcase.png">
+  <img src="docs/images/multi-query-showcase.png" width="830"
+       alt="Vector and Multi-Query results for the service-health question">
+</a>
+
+**Question: How does the index map a retrieved segment back to the larger parent content it came from?**
+
+<a href="docs/images/parent-child.png">
+  <img src="docs/images/parent-child.png" width="830"
+       alt="Parent-Child result for the index-mapping question">
+</a>
+<a href="docs/images/parent-child-why.png">
+  <img src="docs/images/parent-child-why.png" width="830"
+       alt="Explanation of the Parent-Child index-mapping example">
+</a>
+
+</details>
 
 ## Methodology and design decisions
 
@@ -127,7 +136,7 @@ The two Vector showcases behave differently and are described separately.
 
 **C. Validator rules.**
 
-- *BM25 vs Vector:* inspects whether the target retriever, the comparison retriever, both, or neither place an expected document at rank 1. 
+- *BM25 vs Vector:* inspects whether the target retriever, the comparison retriever, both, or neither place an expected document at rank 1.
 - *Multi-Query vs Vector:* compares intended scenario-group coverage in plain Vector's top 3 with the full, untruncated Multi-Query union.
 - *MMR vs Vector:* checks that Vector's top 3 contain at least two cluster members, and that MMR's top 3 contain fewer while keeping at least one.
 - *Parent-Child:* checks that the expected parent appears in the top 3, and that the top parent agrees with the top resolved parent from the diagnostic child search.
@@ -145,6 +154,7 @@ The code in `corpus/validate_questions.py` is the source of truth for exact verd
 **H. UI execution model.** Selecting a question only shows its metadata. Retrieval runs only when "Run retrieval" is clicked. The "Target method" label is static curation metadata, not a winner inferred from the current run. Findings are not presented as winners. Parent-Child child diagnostics are shown separately from the final results.
 
 **I. Tooling.** Python 3.12, uv, pyproject.toml, just, pytest, and ruff. Dependencies are pinned with `==`.
+
 ## Limitations
 
 - The corpus is small and hand-designed: 27 short documents plus one long guide. The examples demonstrate mechanisms by construction. This is not a retrieval benchmark, and no benchmark numbers are claimed.
