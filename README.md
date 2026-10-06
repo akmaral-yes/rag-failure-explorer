@@ -15,7 +15,7 @@ Retrieval is not one-size-fits-all. This project compares five retrieval strateg
 Terms used throughout:
 
 - **Showcase**: a curated example where the target retrieval behavior was observed cleanly during validation.
-- **Finding**: an intentionally retained example where the expected advantage did not appear cleanly. The non-result is informative: it marks a limit or condition of the mechanism. Findings are not failed tests awaiting tuning: the validator excludes them from its needs-iteration list. Examples that still did not produce a clean contrast after rework were kept as findings rather than forced.
+- **Finding**: an intentionally retained example where the expected advantage did not appear cleanly. The result is informative because it reveals a limit or condition of the retrieval mechanism.
 
 Current `just validate` result: 8 PASS (all showcases), 3 AMBIGUOUS (the three findings), 0 FAIL, 0 malformed.
 
@@ -93,10 +93,10 @@ The two Vector showcases behave differently and are described separately.
 - Matching happens against small child chunks. `ParentDocumentRetriever` returns the larger parent section they belong to.
 - The Chunking showcase resolves to `inference_service_guide::chunking` at rank 1. The Indexing showcase resolves to `inference_service_guide::indexing` at rank 1.
 - The diagnostic child hits explain which chunks matched. They are debugging information, not the canonical returned result.
-- Child chunks come from a character-based splitter and can start or end mid-sentence, so the diagnostic panel can show fragments (visible in the UI examples below).
+- Child chunks come from a character-based splitter and can start or end mid-sentence, so the diagnostic panel can show fragments (visible in the Demo below).
 - These examples demonstrate context recovery, not universal superiority.
 
-## UI examples
+## Demo
 
 <details>
 <summary>View UI examples</summary>
@@ -153,23 +153,18 @@ The code in `corpus/validate_questions.py` is the source of truth for exact verd
 
 **H. UI execution model.** Selecting a question only shows its metadata. Retrieval runs only when "Run retrieval" is clicked. The "Target method" label is static curation metadata, not a winner inferred from the current run. Findings are not presented as winners. Parent-Child child diagnostics are shown separately from the final results.
 
-**I. Tooling.** Python 3.12, uv, pyproject.toml, just, pytest, and ruff. Dependencies are pinned with `==`.
-
 ## Limitations
 
 - The corpus is small and hand-designed: 27 short documents plus one long guide. The examples demonstrate mechanisms by construction. This is not a retrieval benchmark, and no benchmark numbers are claimed.
 - `scenario_group` is a designed evaluation label, not a human relevance judgment. Coverage and redundancy are measured against these predefined groups. For example, a throttling document may be related to the query, but it does not count toward the four service_health_signals facets unless it belongs to that group.
 - Multi-Query variants are LLM-generated and can differ between runs, so its retrieved union may also vary.
-- The Parent-Child examples check that the expected parent is returned and that it agrees with the diagnostic child match. They are not compared against a baseline that returns the child chunk alone, so no measured advantage is claimed. The long guide has three parent sections of two to four short subsections each, so the added context is modest.
-- When fewer than three documents share tokens with a query, BM25 returns zero-score documents, ordered by corpus position rather than relevance.
+- Parent-Child has no child-only baseline comparison, so no measured advantage is claimed.
 - There is one embedding model and a fixed configuration per method. The repository contains no systematic hyperparameter sweep. MMR is fixed at fetch_k=10 and lambda_mult=0.5.
-- BM25 raw-score extraction relies on `BM25Retriever` internals (`vectorizer`, `preprocess_func`). It is isolated in one helper, `_raw_bm25_scores`.
-- Generated Multi-Query variants are captured through LangChain logging because the retriever does not expose them through its public result API.
 - The UI has no free-text input and no answer generation.
 
 ## Setup and usage
 
-Prerequisites: Python 3.12, [uv](https://docs.astral.sh/uv/), [just](https://just.systems/), and an OpenAI API key.
+Prerequisites: Python 3.12, [uv](https://docs.astral.sh/uv/), [just](https://just.systems/), and an OpenAI API key. Tests run with pytest, linting uses ruff, and dependencies are pinned with `==` in `pyproject.toml`.
 
 ```bash
 git clone https://github.com/akmaral-yes/rag-failure-explorer.git
@@ -182,37 +177,41 @@ just test                   # pytest, including 2 integration tests that call Op
 just smoke                  # retriever smoke test: prints each retriever's output
 ```
 
-Also available: `just lint`, `just format`, `just check` (lint and tests), and `just clean`. Two tests are marked `integration` and call OpenAI, so `just test` requires a valid OPENAI_API_KEY.
+Also available: `just lint`, `just format`, `just check` (lint and tests), and `just clean`. `just test` runs the full suite, including two tests marked `integration` that call OpenAI, so it requires a valid `OPENAI_API_KEY`.
 
 ## Project structure
 
 ```
 corpus/
-  corpus.json                   27 short documents
-  questions.json                11 curated questions
-  loader.py                     corpus loading, long-guide parent split
-  validate_questions.py         scenario-specific validator (just validate)
-  long_docs/
-    inference_service_guide.md  long guide for Parent-Child
+├── corpus.json
+├── questions.json
+├── loader.py
+├── validate_questions.py
+└── long_docs/
+    └── inference_service_guide.md
+
 retrievers/
-  common.py                     shared result shape
-  bm25.py                       BM25 retriever
-  bm25_preprocessing.py         BM25 tokenizers
-  vector.py                     Vector retriever, shared Chroma store
-  multi_query.py                Multi-Query retriever
-  mmr.py                        MMR retriever
-  parent_child.py               Parent-Child retriever
-  smoke_test.py                 smoke test (just smoke)
+├── common.py
+├── bm25.py
+├── bm25_preprocessing.py
+├── vector.py
+├── multi_query.py
+├── mmr.py
+├── parent_child.py
+└── smoke_test.py
+
 experiments/
-  bm25_preprocessing.py         three-way BM25 tokenization comparison
+└── bm25_preprocessing.py
+
 ui/
-  app.py                        Gradio app (just run)
-tests/                          corpus invariants, retriever sanity checks
-docs/images/                    README screenshots
-config.py                       model names, retrieval defaults
-justfile                        task runner
-pyproject.toml                  pinned dependencies, tool config
-LICENSE                         MIT
+└── app.py
+
+tests/
+docs/images/
+config.py
+justfile
+pyproject.toml
+LICENSE
 ```
 
 ## License
