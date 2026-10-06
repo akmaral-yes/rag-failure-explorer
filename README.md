@@ -3,18 +3,25 @@
 Retrieval is not one-size-fits-all. This project compares five retrieval strategies (BM25, vector search, Multi-Query, MMR, and Parent-Child) on a small hand-designed corpus. Each curated question is a controlled example that shows when a retrieval mechanism helps, when it does not, and why. It does not try to name a single "best" retriever. It retrieves and compares documents only; it does not generate answers.
 
 ## Screenshots
+Showcase: BM25 and Vector side by side for "What does the ef_construction parameter control?"
+<a href="docs/images/bm25-showcase.png">
+  <img src="docs/images/bm25-showcase.png" width="830"
+       alt="BM25 and Vector results for the ef_construction question">
+</a>
 
-![BM25 and Vector results for the ef_construction question](docs/images/bm25-showcase.png)
-*Showcase: BM25 and Vector side by side for "What does the ef_construction parameter control?"*
+Showcase: Vector's top 3 against the top 3 of the Multi-Query union (5 unique results).
+<a href="docs/images/multi-query-showcase.png">
+  <img src="docs/images/multi-query-showcase.png" width="830"
+       alt="Vector and Multi-Query results for the service-health question">
+</a>
 
-![Vector and Multi-Query results for the service-health question](docs/images/multi-query-showcase.png)
-*Showcase: Vector's top 3 against the top 3 of the Multi-Query union (5 unique results).*
-
-![BM25 and Vector results for the ef_search question](docs/images/finding-ef-search.png)
-*Finding: both BM25 and Vector rank the ef_search document first.*
-
-![Parent-Child result with matched child chunks for the chunking-overlap question](docs/images/parent-child.png)
+Showcase: How does the platform avoid losing information when a sentence spans two chunks?\
 *Parent-Child: the resolved parent section on the left; the matched child chunks on the right, labeled as diagnostic.*
+<a href="docs/images/parent-child.png">
+  <img src="docs/images/parent-child.png" width="830"
+       alt="Parent-Child result with matched child chunks">
+</a>
+
 
 ## What the project does
 
